@@ -2,140 +2,169 @@ require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const express = require('express');
+const QRCode = require('qrcode');
+const fs = require('fs');
 
-// Get environment variables
-const TOKEN = process.env.s; // Bot token
-const RENDER_URL = process.env.r; // Project URL
+// إعدادات البيئة
+const TOKEN = process.env.s;
+const RENDER_URL = process.env.r;
 
 if (!TOKEN || !RENDER_URL) {
-    console.error('Error: Missing required environment variables');
+    console.error('Error: Missing environment variables');
     process.exit(1);
 }
 
 const bot = new TelegramBot(TOKEN, {polling: true});
-
-// Create Express app for web views
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files (including your tele.html)
+// إنشاء مجلد مؤقت لصور QR
+if (!fs.existsSync('./temp')) {
+    fs.mkdirSync('./temp');
+}
+
 app.use(express.static(__dirname));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-// Start the web server
-app.listen(PORT, () => {
-    console.log(`Web server running on port ${PORT}`);
-});
+// واجهة الأزرار الرئيسية (ماردكون)
+const mainMenu = {
+    reply_markup: {
+        inline_keyboard: [
+            [
+                {text: 'توليد الصور 🖼', callback_data: 'generate_image'},
+                {text: 'معلومات انستا 📷', callback_data: 'instagram_info'}
+            ],
+            [
+                {text: 'معلومات تيك توك 🎵', callback_data: 'tiktok_info'},
+                {text: 'ترجمة 🌐', callback_data: 'translation'}
+            ],
+            [
+                {text: 'مواقع ويب 📲', callback_data: 'web_sites'},
+                {text: 'إنشاء QR كود', callback_data: 'create_qr'}
+            ],
+            [
+                {text: 'قراءة QR كود', callback_data: 'read_qr'},
+                {text: 'موقع تلجرام 📨', callback_data: 'telegram_site'}
+            ]
+        ]
+    }
+};
 
-// Handle /start command
+// معالجة أمر /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const options = {
-        reply_markup: {
-            keyboard: [
-                [{text: 'توليد الصور 🖼️'}],
-                [{text: 'معلومات انستا 📷'}, {text: 'معلومات تيك توك 🎵'}],
-                [{text: 'ترجمة 🌐'}],
-                [{text: 'مواقع ويب 📲'}],
-                [{text: 'تلجرام 📨'}]
-            ],
-            resize_keyboard: true,
-            one_time_keyboard: false
-        }
-    };
-    
-    bot.sendMessage(chatId, 'مرحباً! يمكنك التمتع بالخدمات واختيار ما يناسبك من الخيارات المتاحة:', options);
+    bot.sendMessage(chatId, 'مرحباً! اختر الخدمة التي تريدها:', mainMenu);
 });
 
-// Handle button clicks
-bot.on('message', async (msg) => {
-    const chatId = msg.chat.id;
-    const text = msg.text;
+// معالجة الضغط على الأزرار
+bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const data = query.data;
+    const userId = query.from.id;
 
     try {
-        if (text === 'توليد الصور 🖼️') {
-            bot.sendMessage(chatId, 'أرسل لي وصف الصورة التي تريد توليدها...');
-            bot.once('message', async (msg) => {
-                const prompt = msg.text;
-                try {
-                    const response = await axios.post('https://ai-api.magicstudio.com/api/ai-art-generator', {
-                        prompt: prompt
-                    }, {
-                        headers: {
-                            'Content-Type': 'application/json'
+        switch(data) {
+            case 'generate_image':
+                await bot.sendMessage(chatId, 'أرسل وصف الصورة التي تريد توليدها...');
+                bot.once('message', async (msg) => {
+                    if (msg.text) {
+                        const response = await axios.post('https://ai-api.magicstudio.com/api/ai-art-generator', {
+                            prompt: msg.text
+                        });
+                        if (response.data?.url) {
+                            bot.sendPhoto(chatId, response.data.url);
                         }
-                    });
-                    
-                    if (response.data && response.data.url) {
-                        bot.sendPhoto(chatId, response.data.url);
-                    } else {
-                        bot.sendMessage(chatId, 'عذراً، لم أتمكن من توليد الصورة. حاول مرة أخرى.');
                     }
-                } catch (error) {
-                    console.error(error);
-                    bot.sendMessage(chatId, 'حدث خطأ أثناء توليد الصورة. حاول مرة أخرى لاحقاً.');
-                }
-            });
-        }
-        else if (text === 'معلومات انستا 📷') {
-            bot.sendMessage(chatId, 'أرسل لي اسم المستخدم على انستجرام...');
-            bot.once('message', async (msg) => {
-                const username = msg.text;
-                // In a real implementation, you would call an Instagram API here
-                bot.sendMessage(chatId, `معلومات انستجرام لـ ${username}:\n(هذه خدمة وهمية لأغراض التوضيح)`);
-            });
-        }
-        else if (text === 'معلومات تيك توك 🎵') {
-            bot.sendMessage(chatId, 'أرسل لي اسم المستخدم على تيك توك...');
-            bot.once('message', async (msg) => {
-                const username = msg.text;
-                // In a real implementation, you would call a TikTok API here
-                bot.sendMessage(chatId, `معلومات تيك توك لـ ${username}:\n(هذه خدمة وهمية لأغراض التوضيح)`);
-            });
-        }
-        else if (text === 'ترجمة 🌐') {
-            bot.sendMessage(chatId, 'أرسل لي النص الذي تريد ترجمته...');
-            bot.once('message', async (msg) => {
-                const textToTranslate = msg.text;
-                try {
-                    const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=en|ar`);
-                    
-                    if (response.data && response.data.responseData) {
-                        bot.sendMessage(chatId, `الترجمة: ${response.data.responseData.translatedText}`);
-                    } else {
-                        bot.sendMessage(chatId, 'عذراً، لم أتمكن من ترجمة النص. حاول مرة أخرى.');
-                    }
-                } catch (error) {
-                    console.error(error);
-                    bot.sendMessage(chatId, 'حدث خطأ أثناء الترجمة. حاول مرة أخرى لاحقاً.');
-                }
-            });
-        }
-        else if (text === 'مواقع ويب 📲') {
-            const options = {
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            {text: 'تشفير HTML', url: 'https://roxhtml.pages.dev'},
-                            {text: 'بلاغات تيك توك', url: 'https://tiktok.com'}
-                        ],
-                        [
-                            {text: 'موقع ويب', url: 'https://ddos7.pages.dev/'},
-                            {text: 'ذكاء اصطناعي', url: 'http://nikai.pages.dev'}
+                });
+                break;
+
+            case 'instagram_info':
+                await bot.sendMessage(chatId, 'أرسل اسم مستخدم انستجرام...');
+                bot.once('message', (msg) => {
+                    bot.sendMessage(chatId, `جاري جلب معلومات ${msg.text}...`);
+                });
+                break;
+
+            case 'tiktok_info':
+                await bot.sendMessage(chatId, 'أرسل اسم مستخدم تيك توك...');
+                bot.once('message', (msg) => {
+                    bot.sendMessage(chatId, `جاري جلب معلومات ${msg.text}...`);
+                });
+                break;
+
+            case 'translation':
+                await bot.sendMessage(chatId, 'أرسل النص الذي تريد ترجمته...');
+                bot.once('message', async (msg) => {
+                    const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(msg.text)}&langpair=en|ar`);
+                    bot.sendMessage(chatId, response.data?.responseData?.translatedText || 'حدث خطأ في الترجمة');
+                });
+                break;
+
+            case 'web_sites':
+                const sitesMenu = {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                {text: 'تشفير HTML', web_app: {url: 'https://roxhtml.pages.dev'}},
+                                {text: 'بلاغات تيك توك', web_app: {url: 'https://tiktok.com'}}
+                            ],
+                            [
+                                {text: 'موقع ويب', web_app: {url: 'https://ddos7.pages.dev/'}},
+                                {text: 'ذكاء اصطناعي', web_app: {url: 'http://nikai.pages.dev'}}
+                            ],
+                            [{text: 'رجوع', callback_data: 'back_to_main'}]
                         ]
-                    ]
-                }
-            };
-            bot.sendMessage(chatId, 'اختر موقع الويب الذي تريد زيارته:', options);
-        }
-        else if (text === 'تلجرام 📨') {
-            // Send the link to your tele.html file
-            const webAppUrl = `${RENDER_URL}/tele.html`;
-            bot.sendMessage(chatId, `يمكنك الوصول إلى موقع تلجرام من هنا:\n${webAppUrl}`);
+                    }
+                };
+                await bot.sendMessage(chatId, 'اختر موقع الويب:', sitesMenu);
+                break;
+
+            case 'create_qr':
+                await bot.sendMessage(chatId, 'أرسل النص أو الرابط لإنشاء QR كود...');
+                bot.once('message', async (msg) => {
+                    const qrPath = `./temp/qr_${userId}.png`;
+                    await QRCode.toFile(qrPath, msg.text);
+                    await bot.sendPhoto(chatId, qrPath);
+                    fs.unlinkSync(qrPath);
+                });
+                break;
+
+            case 'read_qr':
+                await bot.sendMessage(chatId, 'أرسل صورة QR كود لقراءتها...');
+                break;
+
+            case 'telegram_site':
+                const userLink = `${RENDER_URL}/telegram/${userId}`;
+                await bot.sendMessage(chatId, `رابطك الخاص:\n${userLink}`, {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{text: 'فتح الموقع', web_app: {url: userLink}}]
+                        ]
+                    }
+                });
+                break;
+
+            case 'back_to_main':
+                await bot.sendMessage(chatId, 'اختر الخدمة التي تريدها:', mainMenu);
+                break;
         }
     } catch (error) {
         console.error(error);
-        bot.sendMessage(chatId, 'حدث خطأ أثناء معالجة طلبك. حاول مرة أخرى لاحقاً.');
+        bot.sendMessage(chatId, 'حدث خطأ أثناء معالجة طلبك');
     }
+});
+
+// معالجة إرسال الصور (لقراءة QR)
+bot.on('photo', async (msg) => {
+    const chatId = msg.chat.id;
+    const fileId = msg.photo[msg.photo.length - 1].file_id;
+    const file = await bot.getFile(fileId);
+    const fileUrl = `https://api.telegram.org/file/bot${TOKEN}/${file.file_path}`;
+    
+    // هنا يجب إضافة كود لقراءة QR من الصورة
+    // يمكن استخدام مكتبة مثل qrcode-reader
+    
+    bot.sendMessage(chatId, 'جاري قراءة QR كود...');
 });
 
 console.log('Bot is running...');

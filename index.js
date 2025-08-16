@@ -4,6 +4,7 @@ const express = require('express');
 const FormData = require('form-data');
 const { AllHtmlEntities } = require('html-entities');
 const entities = new AllHtmlEntities();
+const path = require('path');
 
 // تهيئة تطبيق Express لتقديم ملف HTML
 const app = express();
@@ -20,20 +21,23 @@ bot.catch((err, ctx) => {
 });
 
 // بدء تشغيل خادم Express لتقديم ملف HTML
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // مسار لتقديم ملف tele.html
 app.get('/tele', (req, res) => {
-  res.sendFile(__dirname + '/tele.html');
+  res.sendFile(path.join(__dirname, 'public', 'tele.html'));
 });
 
 // مسار لمعالجة بيانات النموذج
 app.post('/submit-form', (req, res) => {
   const { userId, ...formData } = req.body;
   
-  // هنا يمكنك إرسال البيانات إلى مستخدم Telegram
+  if (!userId) {
+    return res.status(400).send('معرف المستخدم مطلوب');
+  }
+  
   bot.telegram.sendMessage(userId, `تم استلام بيانات النموذج:\n${JSON.stringify(formData, null, 2)}`)
     .then(() => res.send('تم إرسال البيانات بنجاح!'))
     .catch(err => {
@@ -67,53 +71,57 @@ bot.start((ctx) => {
 bot.action('generate_image', async (ctx) => {
   await ctx.reply('يرجى إرسال وصف الصورة التي تريد توليدها');
   
-  bot.on('text', async (textCtx) => {
-    const prompt = textCtx.message.text;
-    
-    try {
-      await textCtx.reply('جاري توليد الصور، يرجى الانتظار...');
+  // استخدام hears بدلاً من on لمنع التكرار
+  const textHandler = async (textCtx) => {
+    if (textCtx.message && textCtx.message.text) {
+      const prompt = textCtx.message.text;
       
-      const form = new FormData();
-      form.append('prompt', prompt);
-      
-      const response = await axios.post('https://ai-api.magicstudio.com/api/ai-art-generator', form, {
-        headers: form.getHeaders()
-      });
-      
-      if (response.data && response.data.images && response.data.images.length > 0) {
-        for (const imageUrl of response.data.images) {
-          await textCtx.replyWithPhoto({ url: imageUrl });
+      try {
+        await textCtx.reply('جاري توليد الصور، يرجى الانتظار...');
+        
+        const form = new FormData();
+        form.append('prompt', prompt);
+        
+        const response = await axios.post('https://ai-api.magicstudio.com/api/ai-art-generator', form, {
+          headers: form.getHeaders()
+        });
+        
+        if (response.data?.images?.length > 0) {
+          for (const imageUrl of response.data.images) {
+            await textCtx.replyWithPhoto({ url: imageUrl });
+          }
+        } else {
+          await textCtx.reply('لم يتم العثور على أي صور. يرجى المحاولة مرة أخرى.');
         }
-      } else {
-        await textCtx.reply('لم يتم العثور على أي صور. يرجى المحاولة مرة أخرى.');
+      } catch (error) {
+        console.error('Error generating image:', error);
+        await textCtx.reply('حدث خطأ أثناء توليد الصور. يرجى المحاولة مرة أخرى.');
       }
-    } catch (error) {
-      console.error('Error generating image:', error);
-      await textCtx.reply('حدث خطأ أثناء توليد الصور. يرجى المحاولة مرة أخرى.');
+      
+      // إزالة المعالج بعد الاستخدام
+      bot.off('text', textHandler);
     }
-    
-    // إزالة معالج النص لمنع تكرار الاستماع
-    bot.off('text');
-  });
+  };
+  
+  bot.on('text', textHandler);
 });
 
 // معالجة معلومات انستجرام
 bot.action('instagram_info', async (ctx) => {
   await ctx.reply('يرجى إرسال اسم مستخدم انستجرام');
   
-  bot.on('text', async (textCtx) => {
-    const username = textCtx.message.text;
-    
-    try {
-      await textCtx.reply('جاري جلب المعلومات، يرجى الانتظار...');
+  const textHandler = async (textCtx) => {
+    if (textCtx.message && textCtx.message.text) {
+      const username = textCtx.message.text;
       
-      // هنا يمكنك استخدام API لاستخراج معلومات انستجرام
-      // هذا مثال فقط - تحتاج إلى استبداله بـ API حقيقي
-      const response = await axios.get(`https://www.instagram.com/${username}/?__a=1`);
-      
-      if (response.data && response.data.graphql && response.data.graphql.user) {
-        const user = response.data.graphql.user;
-        const info = `
+      try {
+        await textCtx.reply('جاري جلب المعلومات، يرجى الانتظار...');
+        
+        const response = await axios.get(`https://www.instagram.com/${username}/?__a=1`);
+        
+        if (response.data?.graphql?.user) {
+          const user = response.data.graphql.user;
+          const info = `
 معلومات انستجرام:
 الاسم: ${user.full_name}
 اسم المستخدم: ${user.username}
@@ -122,75 +130,82 @@ bot.action('instagram_info', async (ctx) => {
 المنشورات: ${user.edge_owner_to_timeline_media.count}
 حساب خاص: ${user.is_private ? 'نعم' : 'لا'}
 السيرة الذاتية: ${user.biography}
-        `;
-        
-        await textCtx.reply(info);
-        
-        if (user.profile_pic_url_hd) {
-          await textCtx.replyWithPhoto({ url: user.profile_pic_url_hd });
+          `;
+          
+          await textCtx.reply(info);
+          
+          if (user.profile_pic_url_hd) {
+            await textCtx.replyWithPhoto({ url: user.profile_pic_url_hd });
+          }
+        } else {
+          await textCtx.reply('لم يتم العثور على المستخدم. يرجى التأكد من اسم المستخدم والمحاولة مرة أخرى.');
         }
-      } else {
-        await textCtx.reply('لم يتم العثور على المستخدم. يرجى التأكد من اسم المستخدم والمحاولة مرة أخرى.');
+      } catch (error) {
+        console.error('Error fetching Instagram info:', error);
+        await textCtx.reply('حدث خطأ أثناء جلب المعلومات. يرجى المحاولة مرة أخرى.');
       }
-    } catch (error) {
-      console.error('Error fetching Instagram info:', error);
-      await textCtx.reply('حدث خطأ أثناء جلب المعلومات. يرجى المحاولة مرة أخرى.');
+      
+      bot.off('text', textHandler);
     }
-    
-    bot.off('text');
-  });
+  };
+  
+  bot.on('text', textHandler);
 });
 
 // معالجة معلومات تيك توك
 bot.action('tiktok_info', async (ctx) => {
   await ctx.reply('يرجى إرسال اسم مستخدم تيك توك');
   
-  bot.on('text', async (textCtx) => {
-    const username = textCtx.message.text;
-    
-    try {
-      await textCtx.reply('جاري جلب المعلومات، يرجى الانتظار...');
+  const textHandler = async (textCtx) => {
+    if (textCtx.message && textCtx.message.text) {
+      const username = textCtx.message.text;
       
-      // هنا يمكنك استخدام API لاستخراج معلومات تيك توك
-      // هذا مثال فقط - تحتاج إلى استبداله بـ API حقيقي
-      const response = await axios.get(`https://www.tiktok.com/@${username}`);
+      try {
+        await textCtx.reply('جاري جلب المعلومات، يرجى الانتظار...');
+        
+        // هذه مجرد مثال - تحتاج إلى استبداله بـ API حقيقي
+        await textCtx.reply(`تم استلام اسم المستخدم: ${username}\n\nهذه الميزة تحتاج إلى API خاص لاستخراج معلومات تيك توك.`);
+      } catch (error) {
+        console.error('Error fetching TikTok info:', error);
+        await textCtx.reply('حدث خطأ أثناء جلب المعلومات. يرجى المحاولة مرة أخرى.');
+      }
       
-      // في الواقع، تحتاج إلى تحليل HTML أو استخدام API خاص
-      await textCtx.reply(`تم استلام اسم المستخدم: ${username}\n\nهذه الميزة تحتاج إلى API خاص لاستخراج معلومات تيك توك.`);
-    } catch (error) {
-      console.error('Error fetching TikTok info:', error);
-      await textCtx.reply('حدث خطأ أثناء جلب المعلومات. يرجى المحاولة مرة أخرى.');
+      bot.off('text', textHandler);
     }
-    
-    bot.off('text');
-  });
+  };
+  
+  bot.on('text', textHandler);
 });
 
 // معالجة الترجمة
 bot.action('translation', async (ctx) => {
   await ctx.reply('يرجى إرسال النص الذي تريد ترجمته');
   
-  bot.on('text', async (textCtx) => {
-    const text = textCtx.message.text;
-    
-    try {
-      await textCtx.reply('جاري الترجمة، يرجى الانتظار...');
+  const textHandler = async (textCtx) => {
+    if (textCtx.message && textCtx.message.text) {
+      const text = textCtx.message.text;
       
-      const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ar`);
-      
-      if (response.data && response.data.responseData) {
-        const translatedText = entities.decode(response.data.responseData.translatedText);
-        await textCtx.reply(`النص المترجم:\n\n${translatedText}`);
-      } else {
-        await textCtx.reply('لم يتم العثور على ترجمة. يرجى المحاولة مرة أخرى.');
+      try {
+        await textCtx.reply('جاري الترجمة، يرجى الانتظار...');
+        
+        const response = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ar`);
+        
+        if (response.data?.responseData) {
+          const translatedText = entities.decode(response.data.responseData.translatedText);
+          await textCtx.reply(`النص المترجم:\n\n${translatedText}`);
+        } else {
+          await textCtx.reply('لم يتم العثور على ترجمة. يرجى المحاولة مرة أخرى.');
+        }
+      } catch (error) {
+        console.error('Error translating text:', error);
+        await textCtx.reply('حدث خطأ أثناء الترجمة. يرجى المحاولة مرة أخرى.');
       }
-    } catch (error) {
-      console.error('Error translating text:', error);
-      await textCtx.reply('حدث خطأ أثناء الترجمة. يرجى المحاولة مرة أخرى.');
+      
+      bot.off('text', textHandler);
     }
-    
-    bot.off('text');
-  });
+  };
+  
+  bot.on('text', textHandler);
 });
 
 // معالجة عرض المواقع المصغرة

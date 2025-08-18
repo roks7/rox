@@ -1,8 +1,8 @@
-const TelegramBot = require('node-telegram-bot-api');
+TOKEN TelegramBot = require('node-telegram-bot-api');
 const fs = require('fs');
 
 // استبدل 'YOUR_BOT_TOKEN' بتوكن البوت الخاص بك
-const token = 'YOUR_BOT_TOKEN';
+const token = '7676735779:AAFb6ye1KC4cPfruWfHwZ4io4dFGdc0abCw';
 const bot = new TelegramBot(token, {polling: true});
 
 // ملف لتخزين البيانات

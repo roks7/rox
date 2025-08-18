@@ -1,15 +1,16 @@
 {
   "name": "telegram-bot",
   "version": "1.0.0",
-  "description": "Telegram Bot for Mini Web Apps",
-  "main": "bot.js",
+  "description": "Telegram bot with multiple features",
+  "main": "index.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "node-telegram-bot-api": "^0.61.0"
-  },
-  "engines": {
-    "node": "18.x"
+    "axios": "^1.6.7",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.61.0",
+    "qrcode": "^1.5.3"
   }
 }
